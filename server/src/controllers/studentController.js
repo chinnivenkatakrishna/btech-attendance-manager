@@ -14,6 +14,7 @@ const getStudentProfile = async (req, res) => {
                 targetPercentage: student.targetPercentage,
                 individualTargetPercentage: student.individualTargetPercentage,
                 collegeName: student.collegeName,
+                securityQuestion: student.securityQuestion || '',
                 loggedClasses: student.loggedClasses
             });
         } else {
@@ -36,6 +37,12 @@ const updateStudentProfile = async (req, res) => {
             if (req.body.password) {
                 student.password = req.body.password;
             }
+            if (req.body.securityQuestion) {
+                student.securityQuestion = req.body.securityQuestion;
+            }
+            if (req.body.securityAnswer) {
+                student.securityAnswer = req.body.securityAnswer;
+            }
             student.targetPercentage = req.body.targetPercentage !== undefined ? req.body.targetPercentage : student.targetPercentage;
             student.individualTargetPercentage = req.body.individualTargetPercentage !== undefined ? req.body.individualTargetPercentage : student.individualTargetPercentage;
             student.collegeName = req.body.collegeName !== undefined ? req.body.collegeName : student.collegeName;
@@ -48,6 +55,7 @@ const updateStudentProfile = async (req, res) => {
                 targetPercentage: updatedStudent.targetPercentage,
                 individualTargetPercentage: updatedStudent.individualTargetPercentage,
                 collegeName: updatedStudent.collegeName,
+                securityQuestion: updatedStudent.securityQuestion || '',
                 loggedClasses: updatedStudent.loggedClasses
             });
         } else {

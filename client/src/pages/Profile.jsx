@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import * as authService from '../services/authService';
 import { useAuth } from '../hooks/useAuth';
-import { User, School, Target, Save, Lock } from 'lucide-react';
+import { User, School, Target, Save, Lock, HelpCircle } from 'lucide-react';
+
+const SECURITY_QUESTIONS = [
+    "What was the name of your first school?",
+    "What is the name of your favorite childhood friend?",
+    "In which city were you born?",
+    "What was the name of your first pet?",
+    "What is your mother's maiden name?"
+];
 
 const Profile = () => {
     const { user, updateUser } = useAuth();
@@ -12,6 +20,8 @@ const Profile = () => {
     const [collegeName, setCollegeName] = useState(user?.collegeName || '');
     const [targetPercentage, setTargetPercentage] = useState(user?.targetPercentage || 75);
     const [individualTargetPercentage, setIndividualTargetPercentage] = useState(user?.individualTargetPercentage || 40);
+    const [securityQuestion, setSecurityQuestion] = useState(user?.securityQuestion || SECURITY_QUESTIONS[0]);
+    const [securityAnswer, setSecurityAnswer] = useState('');
     
     // Password settings
     const [newPassword, setNewPassword] = useState('');
@@ -20,6 +30,38 @@ const Profile = () => {
     const [infoMsg, setInfoMsg] = useState('');
     const [errMsg, setErrMsg] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const handleSaveSecurityQuestion = async (e) => {
+        e.preventDefault();
+        setInfoMsg('');
+        setErrMsg('');
+        
+        if (!securityAnswer) {
+            setErrMsg('Please enter an answer to your security question.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const updated = await authService.updateProfile({
+                securityQuestion,
+                securityAnswer
+            });
+
+            // Update AuthContext global user state
+            updateUser({
+                securityQuestion: updated.securityQuestion
+            });
+
+            setSecurityAnswer('');
+            setInfoMsg('Security question and answer updated successfully.');
+        } catch (error) {
+            console.error('Error updating security question:', error);
+            setErrMsg(error.response?.data?.error || 'Failed to update security settings.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSaveProfile = async (e) => {
         e.preventDefault();
@@ -204,6 +246,47 @@ const Profile = () => {
                         <button type="submit" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }} disabled={loading || !newPassword}>
                             <Lock size={18} />
                             <span>Update Password</span>
+                        </button>
+                    </form>
+
+                    <form onSubmit={handleSaveSecurityQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
+                        <div className="panel-header" style={{ marginBottom: '0rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <HelpCircle size={18} color="var(--accent-blue)" />
+                                <span>Security Question Recovery</span>
+                            </h3>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="prof-question">Security Question *</label>
+                            <select 
+                                id="prof-question"
+                                value={securityQuestion}
+                                onChange={(e) => setSecurityQuestion(e.target.value)}
+                                required
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                            >
+                                {SECURITY_QUESTIONS.map((q, idx) => (
+                                    <option key={idx} value={q} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{q}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="prof-answer">Security Answer *</label>
+                            <input 
+                                type="text" 
+                                id="prof-answer" 
+                                placeholder="Enter answer to set or update question"
+                                value={securityAnswer}
+                                onChange={(e) => setSecurityAnswer(e.target.value)}
+                                required 
+                            />
+                        </div>
+
+                        <button type="submit" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }} disabled={loading}>
+                            <Save size={18} />
+                            <span>Update Question</span>
                         </button>
                     </form>
                 </div>
