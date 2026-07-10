@@ -42,6 +42,15 @@ const StudentSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    securityQuestion: {
+        type: String,
+        required: [true, 'Please select a security question']
+    },
+    securityAnswer: {
+        type: String,
+        required: [true, 'Please provide a security answer'],
+        select: false
+    },
     loggedClasses: {
         type: Object,
         default: {}
@@ -56,13 +65,18 @@ const StudentSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Encrypt password using bcrypt
+// Encrypt password and security answer using bcrypt
 StudentSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+    if (this.isModified('password')) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    if (this.isModified('securityAnswer')) {
+        const salt = await bcrypt.genSalt(10);
+        const normalizedAnswer = this.securityAnswer.toLowerCase().trim();
+        this.securityAnswer = await bcrypt.hash(normalizedAnswer, salt);
+    }
+    next();
 });
 
 // Match student entered password to hashed password in database

@@ -23,8 +23,8 @@ export const AuthProvider = ({ children }) => {
         return data;
     };
 
-    const register = async (name, email, password, collegeName) => {
-        const data = await authService.register(name, email, password, collegeName);
+    const register = async (name, email, password, collegeName, securityQuestion, securityAnswer) => {
+        const data = await authService.register(name, email, password, collegeName, securityQuestion, securityAnswer);
         setUser(data);
         localStorage.setItem('btech_student', JSON.stringify(data));
         return data;

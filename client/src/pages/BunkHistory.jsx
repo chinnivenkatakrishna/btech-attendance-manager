@@ -52,12 +52,7 @@ const BunkHistory = () => {
                     title="Bunk History Log" 
                     subtitle="Track and modify all missed lectures and manual overrides" 
                 />
-                {logs.length > 0 && (
-                    <button className="btn btn-outline" onClick={handleClearHistory} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
-                        <Trash2 size={16} />
-                        <span>Clear Logs</span>
-                    </button>
-                )}
+
             </div>
 
             {/* Toolbar search */}
@@ -103,14 +98,7 @@ const BunkHistory = () => {
                                         <span className="history-time" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.timestamp}</span>
                                     )}
                                 </div>
-                                <button 
-                                    className="icon-btn delete-btn" 
-                                    onClick={() => handleDeleteLog(log.id)}
-                                    title="Delete Bunk Record"
-                                    style={{ border: '1px solid var(--border-color)' }}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+
                             </div>
                         </div>
                     ))}

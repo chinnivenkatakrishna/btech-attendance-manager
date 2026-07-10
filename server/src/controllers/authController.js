@@ -2,6 +2,7 @@ const Student = require('../models/Student');
 const Subject = require('../models/Subject');
 const Attendance = require('../models/Attendance');
 const generateToken = require('../utils/generateToken');
+const bcrypt = require('bcryptjs');
 
 // Default Seed Subjects
 const defaultSubjects = [
@@ -16,7 +17,11 @@ const defaultSubjects = [
 // @route   POST /api/auth/register
 // @access  Public
 const registerStudent = async (req, res) => {
-    const { name, email, password, collegeName } = req.body;
+    const { name, email, password, collegeName, securityQuestion, securityAnswer } = req.body;
+
+    if (!securityQuestion || !securityAnswer) {
+        return res.status(400).json({ error: 'Security question and answer are required' });
+    }
 
     try {
         const studentExists = await Student.findOne({ email });
@@ -30,7 +35,9 @@ const registerStudent = async (req, res) => {
             name,
             email,
             password,
-            collegeName: collegeName || ''
+            collegeName: collegeName || '',
+            securityQuestion,
+            securityAnswer
         });
 
         if (student) {
@@ -121,4 +128,61 @@ const loginStudent = async (req, res) => {
     }
 };
 
-module.exports = { registerStudent, loginStudent };
+// @desc    Get security question for a student by email
+// @route   GET /api/auth/security-question/:email
+// @access  Public
+const getSecurityQuestion = async (req, res) => {
+    const { email } = req.params;
+
+    try {
+        const student = await Student.findOne({ email: email.toLowerCase().trim() });
+        if (!student) {
+            return res.status(404).json({ error: 'Student with this email does not exist' });
+        }
+
+        res.json({ question: student.securityQuestion });
+    } catch (error) {
+        console.error('Get security question error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// @desc    Reset student password using security answer
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+    const { email, securityAnswer, newPassword } = req.body;
+
+    if (!email || !securityAnswer || !newPassword) {
+        return res.status(400).json({ error: 'Email, security answer, and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    try {
+        const student = await Student.findOne({ email: email.toLowerCase().trim() }).select('+securityAnswer');
+        if (!student) {
+            return res.status(404).json({ error: 'Student with this email does not exist' });
+        }
+
+        const normalizedAnswer = securityAnswer.toLowerCase().trim();
+        const isMatch = await bcrypt.compare(normalizedAnswer, student.securityAnswer);
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Incorrect security answer' });
+        }
+
+        // Update password (Student model save hook will hash it)
+        student.password = newPassword;
+        await student.save();
+
+        res.json({ message: 'Password has been reset successfully' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = { registerStudent, loginStudent, getSecurityQuestion, resetPassword };
