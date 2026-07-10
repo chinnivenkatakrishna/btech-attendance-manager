@@ -9,7 +9,8 @@ const SECURITY_QUESTIONS = [
     "What is the name of your favorite childhood friend?",
     "In which city were you born?",
     "What was the name of your first pet?",
-    "What is your mother's maiden name?"
+    "What is your mother's maiden name?",
+    "Write your own custom question..."
 ];
 
 const Login = () => {
@@ -21,7 +22,8 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [collegeName, setCollegeName] = useState('');
-    const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
+    const [selectedQuestion, setSelectedQuestion] = useState(SECURITY_QUESTIONS[0]);
+    const [customQuestion, setCustomQuestion] = useState('');
     const [securityAnswer, setSecurityAnswer] = useState('');
     
     // Forgot Password fields
@@ -42,11 +44,19 @@ const Login = () => {
         setError('');
         setLoading(true);
 
+        const finalQuestion = selectedQuestion === "Write your own custom question..." ? customQuestion : selectedQuestion;
+
+        if (!finalQuestion) {
+            setError('Please provide a security question.');
+            setLoading(false);
+            return;
+        }
+
         try {
             if (isLogin) {
                 await login(email, password);
             } else {
-                await register(name, email, password, collegeName, securityQuestion, securityAnswer);
+                await register(name, email, password, collegeName, finalQuestion, securityAnswer);
             }
             navigate('/dashboard');
         } catch (err) {
@@ -235,8 +245,8 @@ const Login = () => {
                                     <label htmlFor="reg-question">Security Question *</label>
                                     <select 
                                         id="reg-question"
-                                        value={securityQuestion}
-                                        onChange={(e) => setSecurityQuestion(e.target.value)}
+                                        value={selectedQuestion}
+                                        onChange={(e) => setSelectedQuestion(e.target.value)}
                                         required
                                         style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                                     >
@@ -244,6 +254,16 @@ const Login = () => {
                                             <option key={idx} value={q} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{q}</option>
                                         ))}
                                     </select>
+                                    {selectedQuestion === "Write your own custom question..." && (
+                                        <input 
+                                            type="text"
+                                            placeholder="Enter your custom security question"
+                                            value={customQuestion}
+                                            onChange={(e) => setCustomQuestion(e.target.value)}
+                                            required
+                                            style={{ marginTop: '0.75rem' }}
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="form-group">

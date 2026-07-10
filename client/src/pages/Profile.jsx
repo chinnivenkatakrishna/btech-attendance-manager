@@ -9,18 +9,29 @@ const SECURITY_QUESTIONS = [
     "What is the name of your favorite childhood friend?",
     "In which city were you born?",
     "What was the name of your first pet?",
-    "What is your mother's maiden name?"
+    "What is your mother's maiden name?",
+    "Write your own custom question..."
 ];
 
 const Profile = () => {
     const { user, updateUser } = useAuth();
     
+    // Check if user's question is in pre-defined list
+    const isQuestionPredefined = user?.securityQuestion ? SECURITY_QUESTIONS.includes(user.securityQuestion) : true;
+
     // Form fields
     const [name, setName] = useState(user?.name || '');
     const [collegeName, setCollegeName] = useState(user?.collegeName || '');
     const [targetPercentage, setTargetPercentage] = useState(user?.targetPercentage || 75);
     const [individualTargetPercentage, setIndividualTargetPercentage] = useState(user?.individualTargetPercentage || 40);
-    const [securityQuestion, setSecurityQuestion] = useState(user?.securityQuestion || SECURITY_QUESTIONS[0]);
+    const [selectedQuestion, setSelectedQuestion] = useState(
+        user?.securityQuestion 
+            ? (isQuestionPredefined ? user.securityQuestion : "Write your own custom question...") 
+            : SECURITY_QUESTIONS[0]
+    );
+    const [customQuestion, setCustomQuestion] = useState(
+        user?.securityQuestion && !isQuestionPredefined ? user.securityQuestion : ''
+    );
     const [securityAnswer, setSecurityAnswer] = useState('');
     
     // Password settings
@@ -36,6 +47,13 @@ const Profile = () => {
         setInfoMsg('');
         setErrMsg('');
         
+        const finalQuestion = selectedQuestion === "Write your own custom question..." ? customQuestion : selectedQuestion;
+
+        if (!finalQuestion) {
+            setErrMsg('Please enter a custom question.');
+            return;
+        }
+
         if (!securityAnswer) {
             setErrMsg('Please enter an answer to your security question.');
             return;
@@ -44,7 +62,7 @@ const Profile = () => {
         setLoading(true);
         try {
             const updated = await authService.updateProfile({
-                securityQuestion,
+                securityQuestion: finalQuestion,
                 securityAnswer
             });
 
@@ -261,8 +279,8 @@ const Profile = () => {
                             <label htmlFor="prof-question">Security Question *</label>
                             <select 
                                 id="prof-question"
-                                value={securityQuestion}
-                                onChange={(e) => setSecurityQuestion(e.target.value)}
+                                value={selectedQuestion}
+                                onChange={(e) => setSelectedQuestion(e.target.value)}
                                 required
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                             >
@@ -270,6 +288,16 @@ const Profile = () => {
                                     <option key={idx} value={q} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{q}</option>
                                 ))}
                             </select>
+                            {selectedQuestion === "Write your own custom question..." && (
+                                <input 
+                                    type="text"
+                                    placeholder="Enter your custom security question"
+                                    value={customQuestion}
+                                    onChange={(e) => setCustomQuestion(e.target.value)}
+                                    required
+                                    style={{ marginTop: '0.75rem' }}
+                                />
+                            )}
                         </div>
 
                         <div className="form-group">
