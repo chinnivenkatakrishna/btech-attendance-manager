@@ -44,11 +44,11 @@ const StudentSchema = new mongoose.Schema({
     },
     securityQuestion: {
         type: String,
-        required: [true, 'Please select a security question']
+        required: false
     },
     securityAnswer: {
         type: String,
-        required: [true, 'Please provide a security answer'],
+        required: false,
         select: false
     },
     loggedClasses: {

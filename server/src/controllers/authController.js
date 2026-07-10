@@ -19,8 +19,9 @@ const defaultSubjects = [
 const registerStudent = async (req, res) => {
     const { name, email, password, collegeName, securityQuestion, securityAnswer } = req.body;
 
-    if (!securityQuestion || !securityAnswer) {
-        return res.status(400).json({ error: 'Security question and answer are required' });
+    // If one is provided, the other must be provided too
+    if ((securityQuestion && !securityAnswer) || (!securityQuestion && securityAnswer)) {
+        return res.status(400).json({ error: 'Please provide both a security question and an answer, or leave both empty.' });
     }
 
     try {

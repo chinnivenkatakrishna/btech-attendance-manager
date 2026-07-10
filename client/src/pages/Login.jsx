@@ -5,6 +5,7 @@ import * as authService from '../services/authService';
 import { GraduationCap, Mail, Lock, User, School, HelpCircle, ShieldAlert } from 'lucide-react';
 
 const SECURITY_QUESTIONS = [
+    "-- Select a security question (optional) --",
     "What was the name of your first school?",
     "What is the name of your favorite childhood friend?",
     "In which city were you born?",
@@ -44,19 +45,30 @@ const Login = () => {
         setError('');
         setLoading(true);
 
-        const finalQuestion = selectedQuestion === "Write your own custom question..." ? customQuestion : selectedQuestion;
+        let finalQuestion = '';
+        let finalAnswer = '';
 
-        if (!finalQuestion) {
-            setError('Please provide a security question.');
-            setLoading(false);
-            return;
+        if (selectedQuestion !== SECURITY_QUESTIONS[0]) {
+            finalQuestion = selectedQuestion === "Write your own custom question..." ? customQuestion : selectedQuestion;
+            finalAnswer = securityAnswer;
+
+            if (!finalQuestion) {
+                setError('Please provide a security question.');
+                setLoading(false);
+                return;
+            }
+            if (!finalAnswer) {
+                setError('Please provide an answer to your security question.');
+                setLoading(false);
+                return;
+            }
         }
 
         try {
             if (isLogin) {
                 await login(email, password);
             } else {
-                await register(name, email, password, collegeName, finalQuestion, securityAnswer);
+                await register(name, email, password, collegeName, finalQuestion, finalAnswer);
             }
             navigate('/dashboard');
         } catch (err) {
@@ -247,12 +259,11 @@ const Login = () => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="reg-question">Security Question *</label>
+                                    <label htmlFor="reg-question">Security Question (Optional)</label>
                                     <select 
                                         id="reg-question"
                                         value={selectedQuestion}
                                         onChange={(e) => setSelectedQuestion(e.target.value)}
-                                        required
                                         style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                                     >
                                         {SECURITY_QUESTIONS.map((q, idx) => (
@@ -271,17 +282,19 @@ const Login = () => {
                                     )}
                                 </div>
 
-                                <div className="form-group">
-                                    <label htmlFor="reg-answer">Security Answer *</label>
-                                    <input 
-                                        type="text" 
-                                        id="reg-answer"
-                                        placeholder="Case-insensitive answer"
-                                        value={securityAnswer}
-                                        onChange={(e) => setSecurityAnswer(e.target.value)}
-                                        required 
-                                    />
-                                </div>
+                                {selectedQuestion !== SECURITY_QUESTIONS[0] && (
+                                    <div className="form-group">
+                                        <label htmlFor="reg-answer">Security Answer *</label>
+                                        <input 
+                                            type="text" 
+                                            id="reg-answer"
+                                            placeholder="Case-insensitive answer"
+                                            value={securityAnswer}
+                                            onChange={(e) => setSecurityAnswer(e.target.value)}
+                                            required 
+                                        />
+                                    </div>
+                                )}
                             </>
                         )}
 
