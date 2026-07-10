@@ -140,6 +140,10 @@ const getSecurityQuestion = async (req, res) => {
             return res.status(404).json({ error: 'Student with this email does not exist' });
         }
 
+        if (!student.securityQuestion) {
+            return res.status(400).json({ error: 'This account has not set up a security question. Please contact your database administrator to reset your password.' });
+        }
+
         res.json({ question: student.securityQuestion });
     } catch (error) {
         console.error('Get security question error:', error);

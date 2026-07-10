@@ -72,6 +72,11 @@ const Login = () => {
         try {
             setError('');
             const data = await authService.getSecurityQuestion(forgotEmail);
+            if (!data || !data.question) {
+                setError('This account has not set up a security question. Please contact your administrator.');
+                setRecoveryQuestion('');
+                return;
+            }
             setRecoveryQuestion(data.question);
         } catch (err) {
             setError(err.response?.data?.error || 'Could not retrieve security question');
