@@ -219,7 +219,24 @@ const Subjects = () => {
                                     <span>{stats.message}</span>
                                 </div>
 
-
+                                <div className="subject-card-quick-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.75rem' }}>
+                                    <button 
+                                        className="btn btn-outline" 
+                                        onClick={() => handleManualCounter(s, 1, 1)}
+                                        style={{ flex: 1, padding: '0.4rem 0.5rem', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '32px' }}
+                                        title="Increment both attended and conducted count"
+                                    >
+                                        + Attended
+                                    </button>
+                                    <button 
+                                        className="btn btn-outline" 
+                                        onClick={() => handleManualCounter(s, 0, 1)}
+                                        style={{ flex: 1, padding: '0.4rem 0.5rem', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '32px', borderColor: 'rgba(239, 68, 68, 0.25)', color: '#ef4444' }}
+                                        title="Increment conducted count only to record a bunk"
+                                    >
+                                        + Bunked
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}

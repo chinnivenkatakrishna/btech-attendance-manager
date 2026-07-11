@@ -162,7 +162,11 @@ const Dashboard = () => {
                                         </div>
                                         <div className="history-details">
                                             <span className="history-subj-name">{log.subjectName}</span>
-                                            <span className="history-action-text">{log.details || 'Bunked class'}</span>
+                                            <span className="history-action-text">
+                                                {log.details && log.details.startsWith('classRef:') 
+                                                    ? 'Bunked via checklist' 
+                                                    : (log.details || 'Bunked class')}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="history-item-right">

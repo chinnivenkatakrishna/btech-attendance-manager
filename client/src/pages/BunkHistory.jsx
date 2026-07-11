@@ -42,7 +42,8 @@ const BunkHistory = () => {
     // Filter logs by subject name search query
     const filteredLogs = logs.filter(log => {
         const query = searchText.toLowerCase();
-        return log.subjectName.toLowerCase().includes(query) || (log.details || '').toLowerCase().includes(query);
+        const displayDetails = log.details && log.details.startsWith('classRef:') ? 'bunked via checklist' : (log.details || 'logged class missed');
+        return log.subjectName.toLowerCase().includes(query) || displayDetails.toLowerCase().includes(query);
     });
 
     return (
@@ -52,7 +53,12 @@ const BunkHistory = () => {
                     title="Bunk History Log" 
                     subtitle="Track and modify all missed lectures and manual overrides" 
                 />
-
+                {logs.length > 0 && (
+                    <button className="btn btn-outline" onClick={handleClearHistory} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
+                        <RotateCcw size={18} />
+                        <span>Clear History</span>
+                    </button>
+                )}
             </div>
 
             {/* Toolbar search */}
@@ -78,30 +84,42 @@ const BunkHistory = () => {
                 </div>
             ) : (
                 <div className="history-list" style={{ maxHeight: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {filteredLogs.map((log) => (
-                        <div key={log.id} className="history-item" style={{ padding: '1.25rem 1.5rem', borderRadius: '14px' }}>
-                            <div className="history-item-left">
-                                <div className="history-icon-box bg-danger">
-                                    <X size={18} color="white" />
-                                </div>
-                                <div className="history-details" style={{ gap: '0.35rem' }}>
-                                    <span className="history-subj-name" style={{ fontSize: '1.05rem' }}>{log.subjectName}</span>
-                                    <span className="history-action-text" style={{ fontSize: '0.85rem' }}>
-                                        Missed class: <b>{log.details || 'Logged class missed'}</b>
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="history-item-right" style={{ gap: '0.5rem', flexDirection: 'row', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem', marginRight: '1rem' }}>
-                                    <span className="history-date" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>{log.date}</span>
-                                    {log.timestamp && (
-                                        <span className="history-time" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.timestamp}</span>
-                                    )}
-                                </div>
+                    {filteredLogs.map((log) => {
+                        const friendlyDetails = log.details && log.details.startsWith('classRef:') 
+                            ? 'Bunked via checklist' 
+                            : (log.details || 'Logged class missed');
 
+                        return (
+                            <div key={log.id} className="history-item" style={{ padding: '1.25rem 1.5rem', borderRadius: '14px' }}>
+                                <div className="history-item-left">
+                                    <div className="history-icon-box bg-danger">
+                                        <X size={18} color="white" />
+                                    </div>
+                                    <div className="history-details" style={{ gap: '0.35rem' }}>
+                                        <span className="history-subj-name" style={{ fontSize: '1.05rem' }}>{log.subjectName}</span>
+                                        <span className="history-action-text" style={{ fontSize: '0.85rem' }}>
+                                            Missed class: <b>{friendlyDetails}</b>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="history-item-right" style={{ gap: '0.5rem', flexDirection: 'row', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem', marginRight: '1rem' }}>
+                                        <span className="history-date" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>{log.date}</span>
+                                        {log.timestamp && (
+                                            <span className="history-time" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.timestamp}</span>
+                                        )}
+                                    </div>
+                                    <button 
+                                        className="icon-btn delete-btn" 
+                                        onClick={() => handleDeleteLog(log.id)}
+                                        title="Delete Bunk Record"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

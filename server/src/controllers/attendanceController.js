@@ -74,9 +74,12 @@ const updateSubject = async (req, res) => {
 
             const updatedSubject = await subject.save();
 
-            // Log manual change in logs if counts were modified
-            const diff = subject.conducted - oldConducted;
-            if (diff > 0) {
+            // Log manual change in logs if counts were modified and bunks were added
+            const diffConducted = subject.conducted - oldConducted;
+            const diffAttended = subject.attended - oldAttended;
+            const bunksAdded = diffConducted - diffAttended;
+
+            if (bunksAdded > 0) {
                 await Attendance.create({
                     studentId: req.student._id,
                     subjectId: subject._id,
@@ -114,13 +117,38 @@ const deleteSubject = async (req, res) => {
             const student = await Student.findById(req.student._id);
             if (student) {
                 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const deletedSlotIds = [];
                 days.forEach(day => {
                     if (student.timetable[day]) {
+                        student.timetable[day].forEach(slot => {
+                            if (slot.subjectId.toString() === req.params.id) {
+                                deletedSlotIds.push(slot.id || slot._id.toString());
+                            }
+                        });
                         student.timetable[day] = student.timetable[day].filter(
                             slot => slot.subjectId.toString() !== req.params.id
                         );
                     }
                 });
+
+                // Clean up loggedClasses keys ending with deletedSlotIds
+                if (student.loggedClasses && deletedSlotIds.length > 0) {
+                    const newLoggedClasses = { ...student.loggedClasses };
+                    let modified = false;
+                    Object.keys(newLoggedClasses).forEach(key => {
+                        const parts = key.split('_');
+                        const classId = parts[parts.length - 1];
+                        if (deletedSlotIds.includes(classId)) {
+                            delete newLoggedClasses[key];
+                            modified = true;
+                        }
+                    });
+                    if (modified) {
+                        student.loggedClasses = newLoggedClasses;
+                        student.markModified('loggedClasses');
+                    }
+                }
+
                 await student.save();
             }
 
