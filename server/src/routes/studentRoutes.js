@@ -5,7 +5,8 @@ const {
     updateStudentProfile, 
     getStudentTimetable, 
     addTimetableSlot, 
-    deleteTimetableSlot 
+    deleteTimetableSlot,
+    reorderTimetableSlots
 } = require('../controllers/studentController');
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.route('/timetable')
     .get(protect, getStudentTimetable)
     .post(protect, addTimetableSlot);
     
+router.put('/timetable/reorder', protect, reorderTimetableSlots);
 router.delete('/timetable/:day/:id', protect, deleteTimetableSlot);
 
 module.exports = router;

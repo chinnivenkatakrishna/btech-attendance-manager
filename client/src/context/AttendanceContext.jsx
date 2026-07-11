@@ -170,6 +170,21 @@ export const AttendanceProvider = ({ children }) => {
         }
     };
 
+    const reorderTimetableSlots = async (day, slots) => {
+        try {
+            setTimetable(prev => ({
+                ...prev,
+                [day]: slots
+            }));
+            const updated = await attendanceService.reorderTimetable(day, slots);
+            setTimetable(updated);
+        } catch (error) {
+            console.error(error);
+            fetchAllData();
+            throw error;
+        }
+    };
+
     const markAttendance = async (attendanceData) => {
         const key = `${attendanceData.dateKey}_${attendanceData.classId}`;
         
@@ -382,6 +397,7 @@ export const AttendanceProvider = ({ children }) => {
             deleteSubject,
             addTimetableSlot,
             deleteTimetableSlot,
+            reorderTimetableSlots,
             markAttendance,
             markBulkAttendance,
             deleteLog,

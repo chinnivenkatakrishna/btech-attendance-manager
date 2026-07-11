@@ -35,6 +35,11 @@ export const deleteTimetableSlot = async (day, id) => {
     return response.data;
 };
 
+export const reorderTimetable = async (day, slots) => {
+    const response = await API.put('/student/timetable/reorder', { day, slots });
+    return response.data;
+};
+
 export const getLogs = async () => {
     const response = await API.get('/attendance/logs');
     return response.data;

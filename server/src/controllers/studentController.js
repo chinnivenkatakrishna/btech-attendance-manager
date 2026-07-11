@@ -172,10 +172,47 @@ const deleteTimetableSlot = async (req, res) => {
     }
 };
 
+// @desc    Reorder timetable slots for a specific day
+// @route   PUT /api/student/timetable/reorder
+// @access  Private
+const reorderTimetableSlots = async (req, res) => {
+    const { day, slots } = req.body;
+
+    if (!day || !slots || !Array.isArray(slots)) {
+        return res.status(400).json({ error: 'Day and reordered slots array are required' });
+    }
+
+    try {
+        const student = await Student.findById(req.student._id);
+        if (student) {
+            student.timetable[day] = slots;
+            student.markModified('timetable');
+            await student.save();
+
+            // Populate and return updated timetable
+            const populatedStudent = await student.populate([
+                { path: 'timetable.Monday.subjectId' },
+                { path: 'timetable.Tuesday.subjectId' },
+                { path: 'timetable.Wednesday.subjectId' },
+                { path: 'timetable.Thursday.subjectId' },
+                { path: 'timetable.Friday.subjectId' },
+                { path: 'timetable.Saturday.subjectId' }
+            ]);
+
+            res.json(populatedStudent.timetable);
+        } else {
+            res.status(404).json({ error: 'Student not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getStudentProfile,
     updateStudentProfile,
     getStudentTimetable,
     addTimetableSlot,
-    deleteTimetableSlot
+    deleteTimetableSlot,
+    reorderTimetableSlots
 };

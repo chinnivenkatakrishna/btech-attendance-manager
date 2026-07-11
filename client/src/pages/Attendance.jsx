@@ -11,7 +11,9 @@ import {
     Calendar,
     Search,
     X,
-    BookOpen
+    BookOpen,
+    ChevronUp,
+    ChevronDown
 } from 'lucide-react';
 
 const Attendance = () => {
@@ -24,7 +26,8 @@ const Attendance = () => {
         markAttendance, 
         markBulkAttendance,
         addTimetableSlot, 
-        deleteTimetableSlot 
+        deleteTimetableSlot,
+        reorderTimetableSlots
     } = useAttendance();
     const [currentDay, setCurrentDay] = useState('Monday');
     const [weekOffset, setWeekOffset] = useState(0);
@@ -172,7 +175,28 @@ const Attendance = () => {
         }
     };
 
-    const sortedClasses = (timetable[currentDay] || []).sort((a, b) => a.time.localeCompare(b.time));
+    const sortedClasses = timetable[currentDay] || [];
+
+    const handleMoveClass = async (index, direction) => {
+        const slots = [...sortedClasses];
+        if (direction === 'up' && index > 0) {
+            const temp = slots[index];
+            slots[index] = slots[index - 1];
+            slots[index - 1] = temp;
+        } else if (direction === 'down' && index < slots.length - 1) {
+            const temp = slots[index];
+            slots[index] = slots[index + 1];
+            slots[index + 1] = temp;
+        } else {
+            return;
+        }
+
+        try {
+            await reorderTimetableSlots(currentDay, slots);
+        } catch (error) {
+            console.error('Error reordering timetable slots:', error);
+        }
+    };
 
     // Get date key for active day selectors
     const getActiveDateKey = () => {
@@ -266,9 +290,8 @@ const Attendance = () => {
                             Reset Day
                         </button>
                     </div>
-
                     <div className="timetable-list">
-                        {sortedClasses.map(c => {
+                        {sortedClasses.map((c, idx) => {
                             const subject = c.subjectId; // populated as object from backend
                             const subjectName = subject ? subject.name : 'Deleted Course';
                             const subjectColor = subject ? (subject.color || 'blue') : 'blue';
@@ -334,6 +357,24 @@ const Attendance = () => {
                                         onClick={() => handleMarkAttendance(c._id || c.id, 'holiday')}
                                     >
                                         Dismiss
+                                    </button>
+                                    <button 
+                                        className="icon-btn" 
+                                        onClick={() => handleMoveClass(idx, 'up')}
+                                        disabled={idx === 0}
+                                        title="Move Up"
+                                        style={{ border: '1px solid var(--border-color)', opacity: idx === 0 ? 0.3 : 1 }}
+                                    >
+                                        <ChevronUp size={16} />
+                                    </button>
+                                    <button 
+                                        className="icon-btn" 
+                                        onClick={() => handleMoveClass(idx, 'down')}
+                                        disabled={idx === sortedClasses.length - 1}
+                                        title="Move Down"
+                                        style={{ border: '1px solid var(--border-color)', opacity: idx === sortedClasses.length - 1 ? 0.3 : 1 }}
+                                    >
+                                        <ChevronDown size={16} />
                                     </button>
                                     <button 
                                         className="icon-btn delete-btn" 
