@@ -22,7 +22,7 @@ const BunkHistory = () => {
     const [searchText, setSearchText] = useState('');
 
     const handleDeleteLog = async (id) => {
-        if (!confirm('Are you sure you want to delete this bunk record? This will decrement the subject conducted count to reverse the bunk.')) return;
+        if (!confirm('Are you sure you want to delete this log? (This will NOT affect your attendance counts or checklist state).')) return;
         try {
             await deleteLog(id);
         } catch (error) {
@@ -31,7 +31,7 @@ const BunkHistory = () => {
     };
 
     const handleClearHistory = async () => {
-        if (!confirm('Are you sure you want to clear your entire Bunk History logs? Your attendance counts will reset to 0% but your subjects and timetable structure will remain intact.')) return;
+        if (!confirm('Are you sure you want to clear your entire Bunk History logs? (This will NOT affect your attendance counts or subjects).')) return;
         try {
             await resetState('logs');
         } catch (error) {

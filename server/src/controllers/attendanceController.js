@@ -299,15 +299,7 @@ const clearLogs = async (req, res) => {
     try {
         if (action === 'logs') {
             await Attendance.deleteMany({ studentId: req.student._id });
-            // Reset conducted/attended counts on subjects to 0
-            await Subject.updateMany({ studentId: req.student._id }, { attended: 0, conducted: 0 });
-            
-            const student = await Student.findById(req.student._id);
-            student.loggedClasses = {};
-            student.markModified('loggedClasses');
-            await student.save();
-
-            res.json({ message: 'Bunk history logs and statistics cleared successfully' });
+            res.json({ message: 'Bunk history logs cleared successfully' });
         } else if (action === 'factory') {
             // Delete all subjects
             await Subject.deleteMany({ studentId: req.student._id });
@@ -340,29 +332,8 @@ const deleteLog = async (req, res) => {
             return res.status(404).json({ error: 'Log not found' });
         }
 
-        // Adjust subject conducted count
-        const subject = await Subject.findOne({ _id: log.subjectId, studentId: req.student._id });
-        if (subject) {
-            subject.conducted = Math.max(0, subject.conducted - 1);
-            await subject.save();
-        }
-
-        // Check if this log was from a timetable checklist click (contains "classRef:")
-        if (log.details && log.details.startsWith('classRef:')) {
-            const classRef = log.details.split('classRef:')[1];
-            // Remove the check-in status from Student.loggedClasses
-            const student = await Student.findById(req.student._id);
-            if (student && student.loggedClasses) {
-                const newLoggedClasses = { ...student.loggedClasses };
-                delete newLoggedClasses[classRef];
-                student.loggedClasses = newLoggedClasses;
-                student.markModified('loggedClasses');
-                await student.save();
-            }
-        }
-
         await Attendance.deleteOne({ _id: req.params.id });
-        res.json({ message: 'Bunk log removed and attendance recalculated successfully' });
+        res.json({ message: 'Bunk log entry removed successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
