@@ -161,24 +161,64 @@ const deleteSubject = async (req, res) => {
     }
 };
 
+// Helper to convert time string (e.g. "08:55 AM") to minutes since midnight for sorting
+const convertTimeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+    if (!match) return 0;
+    
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
+    const ampm = match[3].toUpperCase();
+    
+    if (ampm === 'PM' && hours !== 12) {
+        hours += 12;
+    } else if (ampm === 'AM' && hours === 12) {
+        hours = 0;
+    }
+    return hours * 60 + minutes;
+};
+
 // @desc    Get Bunk History logs
 // @route   GET /api/attendance/logs
 // @access  Private
 const getLogs = async (req, res) => {
     try {
         const logs = await Attendance.find({ studentId: req.student._id })
-            .populate('subjectId')
-            .sort({ createdAt: -1 });
+            .populate('subjectId');
 
-        // Map it to include subjectName
-        const mappedLogs = logs.map(log => ({
-            id: log._id,
-            subjectName: log.subjectId ? log.subjectId.name : 'Deleted Subject',
-            action: log.action,
-            date: log.dateString,
-            timestamp: log.timestamp,
-            details: log.details
-        }));
+        // Map it to clean objects and parse the details if it contains a timetable time range
+        const mappedLogs = logs.map(log => {
+            let details = log.details || '';
+            if (log.details && log.details.startsWith('classRef:')) {
+                const parts = log.details.split('|');
+                details = parts[1] ? `Time: ${parts[1]}` : 'Bunked via checklist';
+            }
+            return {
+                id: log._id,
+                subjectName: log.subjectId ? log.subjectId.name : 'Deleted Subject',
+                action: log.action,
+                date: log.dateString,
+                timestamp: log.timestamp,
+                details: details
+            };
+        });
+
+        // Sort mappedLogs:
+        // 1. Primary: Date Descending (newer calendar dates first)
+        // 2. Secondary: Time Ascending (earlier periods first within the same day)
+        mappedLogs.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            
+            if (dateA.getTime() !== dateB.getTime()) {
+                return dateB.getTime() - dateA.getTime();
+            }
+            
+            const timeA = convertTimeToMinutes(a.timestamp);
+            const timeB = convertTimeToMinutes(b.timestamp);
+            return timeA - timeB;
+        });
 
         res.json(mappedLogs);
     } catch (error) {
@@ -237,10 +277,9 @@ const markTimetableAttendance = async (req, res) => {
                 subject.conducted = Math.max(0, subject.conducted - 1);
             } else if (status === 'absent') {
                 subject.conducted = Math.max(0, subject.conducted - 1);
-                await Attendance.deleteOne({ studentId: student._id, details: `classRef:${logIdString}` });
+                await Attendance.deleteOne({ studentId: student._id, details: { $regex: `^classRef:${logIdString}` } });
             }
             // Remove the logged class status
-            // Map types in mongoose require using .set() or direct assignment on mixed fields
             const newLoggedClasses = { ...student.loggedClasses };
             delete newLoggedClasses[key];
             student.loggedClasses = newLoggedClasses;
@@ -251,7 +290,7 @@ const markTimetableAttendance = async (req, res) => {
                 subject.conducted = Math.max(0, subject.conducted - 1);
             } else if (previousStatus === 'absent') {
                 subject.conducted = Math.max(0, subject.conducted - 1);
-                await Attendance.deleteOne({ studentId: student._id, details: `classRef:${logIdString}` });
+                await Attendance.deleteOne({ studentId: student._id, details: { $regex: `^classRef:${logIdString}` } });
             }
 
             // Apply new check-in effect
@@ -260,13 +299,15 @@ const markTimetableAttendance = async (req, res) => {
                 subject.conducted++;
             } else if (status === 'absent') {
                 subject.conducted++;
+                const classTime = classItem.time;
+                const slotTime = classTime.split(' - ')[0] || classTime.split('-')[0] || classTime;
                 await Attendance.create({
                     studentId: student._id,
                     subjectId: subject._id,
                     dateString,
-                    timestamp,
+                    timestamp: slotTime,
                     action: "bunked class",
-                    details: `classRef:${logIdString}`
+                    details: `classRef:${logIdString}|${classTime}`
                 });
             }
             // Set the new status
@@ -367,7 +408,7 @@ const markBulkAttendance = async (req, res) => {
                 subject.conducted = Math.max(0, subject.conducted - 1);
             } else if (previousStatus === 'absent') {
                 subject.conducted = Math.max(0, subject.conducted - 1);
-                await Attendance.deleteOne({ studentId: student._id, details: `classRef:${logIdString}` });
+                await Attendance.deleteOne({ studentId: student._id, details: { $regex: `^classRef:${logIdString}` } });
             }
 
             // 2. Apply new status
@@ -377,13 +418,24 @@ const markBulkAttendance = async (req, res) => {
                 newLoggedClasses[key] = 'present';
             } else if (status === 'absent') {
                 subject.conducted++;
+                
+                // Find timetable slot time
+                let classItem = null;
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                for (const day of days) {
+                    classItem = student.timetable[day].find(c => c.id === slot.classId || c._id.toString() === slot.classId);
+                    if (classItem) break;
+                }
+                const classTime = classItem ? classItem.time : '';
+                const slotTime = classTime ? (classTime.split(' - ')[0] || classTime.split('-')[0] || classTime) : timestamp;
+
                 await Attendance.create({
                     studentId: student._id,
                     subjectId: subject._id,
                     dateString,
-                    timestamp,
+                    timestamp: slotTime,
                     action: "bunked class",
-                    details: `classRef:${logIdString}`
+                    details: `classRef:${logIdString}|${classTime}`
                 });
                 newLoggedClasses[key] = 'absent';
             } else if (status === 'holiday') {

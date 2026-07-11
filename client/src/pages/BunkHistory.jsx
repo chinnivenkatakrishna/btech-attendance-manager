@@ -85,15 +85,15 @@ const BunkHistory = () => {
             ) : (
                 <div className="history-list" style={{ maxHeight: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {filteredLogs.map((log) => {
-                        const friendlyDetails = log.details && log.details.startsWith('classRef:') 
-                            ? 'Bunked via checklist' 
-                            : (log.details || 'Logged class missed');
+                        const isAM = log.timestamp && log.timestamp.toUpperCase().includes('AM');
+                        const timePeriodLabel = isAM ? 'AM' : 'PM';
+                        const friendlyDetails = log.details || 'Logged class missed';
 
                         return (
                             <div key={log.id} className="history-item" style={{ padding: '1.25rem 1.5rem', borderRadius: '14px' }}>
                                 <div className="history-item-left">
-                                    <div className="history-icon-box bg-danger">
-                                        <X size={18} color="white" />
+                                    <div className="history-icon-box bg-danger" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                                        {timePeriodLabel}
                                     </div>
                                     <div className="history-details" style={{ gap: '0.35rem' }}>
                                         <span className="history-subj-name" style={{ fontSize: '1.05rem' }}>{log.subjectName}</span>
